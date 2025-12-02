@@ -6,40 +6,55 @@ let
     alsa-lib
     udev
 
-    # X11 (required for winit X11 backend)
+    # X11 backend (winit, ggez)
     xorg.libX11
     xorg.libXcursor
     xorg.libXi
     xorg.libXrandr
     xorg.libXext
 
-    # Wayland support
+    # Wayland
     wayland
     wayland-protocols
     libxkbcommon
 
-    # GPU / Graphics
+    # GPU / GL / Vulkan
     vulkan-loader
     libglvnd
-    mesa # includes libEGL + libGL
+    mesa
   ];
-in
 
-mkShell {
-  buildInputs = [
+in mkShell {
+  # Tools needed to build Rust + C deps
+  nativeBuildInputs = [
     pkg-config
-  ] ++ libs;
 
+    # Use clang + lld for ALL linking
+    llvmPackages.clang
+    llvmPackages.lld
+    llvmPackages.libclang
+    rustc
+    cargo
+  ];
+
+  buildInputs = libs;
+
+  # Fix: make all libraries discoverable for runtime
   LD_LIBRARY_PATH = lib.makeLibraryPath libs;
 
-  PKG_CONFIG_PATH = lib.concatStringsSep ":" [
-    "${alsa-lib.dev}/lib/pkgconfig"
-    "${udev.dev}/lib/pkgconfig"
-  ];
+  # Fix: FORCE clang + lld for all C and Rust build scripts
+  CC = "${llvmPackages.clang}/bin/clang";
+  CXX = "${llvmPackages.clang}/bin/clang++";
+  CFLAGS = "-fuse-ld=lld";
 
+  # Fix: Rust must use clang + lld or else linking fails
+  RUSTFLAGS = "-C linker=${llvmPackages.clang}/bin/clang -C link-args=-fuse-ld=lld";
+
+  # Optional but nice
   shellHook = ''
     export WINIT_UNIX_BACKEND=x11
     export SHELL=${pkgs.fish}/bin/fish
     exec $SHELL
   '';
 }
+
