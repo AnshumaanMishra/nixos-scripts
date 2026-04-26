@@ -2,7 +2,7 @@
   description = "Python + CUDA + cuDNN development shell for notebooks (GPU-ready)";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
   };
 
   outputs = { self, nixpkgs }: 
